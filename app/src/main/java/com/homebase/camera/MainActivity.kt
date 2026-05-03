@@ -17,8 +17,6 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -26,12 +24,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -48,7 +52,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -79,7 +86,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun takePhoto() {
-        val imageCapture = imageCapture
+        if (!::imageCapture.isInitialized) return
         val name = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(System.currentTimeMillis())
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, "HB_$name")
@@ -112,6 +119,15 @@ class MainActivity : ComponentActivity() {
             Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
                 Box {
                     CameraPreview(bind = { previewView -> startCamera(previewView) })
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color(0x80000000), Color.Transparent, Color(0xAA000000))
+                                )
+                            )
+                    )
                     CameraControls(onCapture)
                 }
             }
@@ -120,43 +136,40 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun CameraPreview(bind: (PreviewView) -> Unit) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx -> PreviewView(ctx).also(bind) }
-        )
+        AndroidView(modifier = Modifier.fillMaxSize(), factory = { ctx -> PreviewView(ctx).also(bind) })
     }
 
     @Composable
     private fun CameraControls(onCapture: () -> Unit) {
         var filterIntensity by remember { mutableFloatStateOf(0.4f) }
         var ev by remember { mutableFloatStateOf(0f) }
-        var qualityMode by remember { mutableIntStateOf(1) }
+        var qualityMode by remember { mutableIntStateOf(0) }
         var advancedVisible by remember { mutableStateOf(true) }
 
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("HomeBase Pro", color = Color.White, style = MaterialTheme.typography.headlineSmall)
+            Column {
+                Text("HomeBase Pro", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                Text("RAW + LUT camera", color = Color(0xCCFFFFFF))
+            }
 
-            AnimatedVisibility(
-                visible = advancedVisible,
-                enter = fadeIn(animationSpec = spring(stiffness = Spring.StiffnessLow)),
-                exit = fadeOut()
-            ) {
+            AnimatedVisibility(visible = advancedVisible, enter = fadeIn(), exit = fadeOut()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0x66000000), shape = MaterialTheme.shapes.large)
-                        .padding(12.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0x66252525))
+                        .padding(14.dp)
                 ) {
-                    Text("Filter intensity ${(filterIntensity * 100).toInt()}%", color = Color.White)
+                    Text("Filter ${(filterIntensity * 100).toInt()}%", color = Color.White)
                     Slider(value = filterIntensity, onValueChange = { filterIntensity = it })
-                    Text("Exposure compensation ${"%.1f".format(ev)}", color = Color.White)
+                    Text("EV ${"%.1f".format(ev)}", color = Color.White)
                     Slider(value = ev, onValueChange = { ev = it }, valueRange = -2f..2f)
-                    Text("Mode", color = Color.White)
+                    Spacer(Modifier.height(8.dp))
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        listOf("Quality", "Balanced", "Performance").forEachIndexed { index, label ->
+                        listOf("Quality", "Balanced", "Speed").forEachIndexed { index, label ->
                             SegmentedButton(
                                 selected = qualityMode == index,
                                 onClick = { qualityMode = index },
@@ -164,19 +177,29 @@ class MainActivity : ComponentActivity() {
                             ) { Text(label) }
                         }
                     }
-                    Text("Pro controls roadmap: ISO, shutter, WB, manual focus, histogram, RAW DNG", color = Color.LightGray)
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Button(onClick = { advancedVisible = !advancedVisible }) { Text(if (advancedVisible) "Hide Pro" else "Show Pro") }
-                Box(
-                    modifier = Modifier
-                        .size(78.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) { Button(onClick = onCapture) { Text("●") } }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(onClick = { advancedVisible = !advancedVisible }) {
+                    Text(if (advancedVisible) "Minimal" else "Pro")
+                }
+                Button(
+                    onClick = onCapture,
+                    modifier = Modifier.size(84.dp).clip(CircleShape),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                ) {
+                    androidx.compose.material3.Icon(
+                        painter = rememberVectorPainter(Icons.Rounded.PhotoCamera),
+                        contentDescription = "Capture",
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
+                Box(modifier = Modifier.size(72.dp))
             }
         }
     }
@@ -186,14 +209,13 @@ class MainActivity : ComponentActivity() {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
-            imageCapture = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                .build()
+            imageCapture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build()
 
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
             } catch (_: Exception) {
+                Toast.makeText(this, "Camera failed to initialize", Toast.LENGTH_SHORT).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }

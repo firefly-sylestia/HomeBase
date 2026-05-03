@@ -1,49 +1,34 @@
 # HomeBase Pro Camera (Android)
 
-A modern Android-first professional camera app starter focused on:
+A modern Android-first pro camera starter with a cleaner UI and GitHub release-ready automation.
 
-- CameraX capture with manual controls (core v1)
-- RAW-first architecture with fallback strategy roadmap
-- LUT/filter pipeline (`.cube` support planned; starter presets in v1)
-- iOS-inspired modern UI with smooth Compose animations
+## What works now
 
-## Current status (v1)
+- CameraX live preview
+- JPEG capture to MediaStore
+- Modern Compose overlay with animated pro panel
+- Quality/Balanced/Speed mode toggle
+- Release pipeline via GitHub Actions on `v*` tags
 
-This repository now contains a runnable Android app with:
+## Release APK from GitHub tag
 
-- Jetpack Compose UI (Material 3)
-- Camera preview via CameraX `PreviewView`
-- Photo capture to MediaStore (JPEG)
-- Pro controls in UI (EV and zoom wired; ISO/shutter/focus scaffolding)
-- Live filter intensity slider with free starter filters
-- Settings mode presets: **Quality**, **Balanced**, **Performance**
-- Architecture prepared for RAW/LUT expansion
+1. Push your changes to `main`.
+2. Create a tag like `v0.1.1` and push it:
+   - `git tag v0.1.1`
+   - `git push origin v0.1.1`
+3. GitHub Action builds release APK and attaches it to GitHub Release.
 
-## Build
+## Local build
 
 ```bash
-./gradlew assembleDebug
+./gradlew :app:assembleDebug
+./gradlew :app:assembleRelease
 ```
 
-## Run
+## Roadmap (next)
 
-Open in Android Studio Hedgehog+ and run `app` on Android 10+ device.
-
-## Roadmap highlights
-
-- RAW DNG capture on supported hardware via Camera2 interop
-- Multi-frame pseudo-RAW fallback pipeline on unsupported devices
-- Optional Shizuku-assisted advanced controls experiment (device/root dependent)
-- `.cube` LUT import/export and GPU real-time render pipeline
-- Full pro controls: ISO, shutter, WB/Kelvin+tint, focus peaking, histogram, zebras
-- Non-destructive editor with curves/HSL/noise reduction
-
-## LUT source plan (free)
-
-Recommended free LUT sources to support in-app import:
-
-- IWLTBAP free LUT packs
-- RocketStock free LUT packs
-- LUTCalc / community `.cube`
-
-(Integration UI and parser are planned next.)
+- Camera2 RAW DNG capture on capable devices
+- Software multi-frame fallback (pseudo-RAW)
+- Optional Shizuku-assisted experimental path
+- LUT `.cube` import and realtime pipeline
+- Full pro tools (ISO, shutter, focus peaking, histogram)
